@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Page to PDF Converter - Professional Document Generation</title>
+    <meta name="description" content="Convert any web page to professional PDF documents instantly">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-gradient"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="url(#gradient)" />
+                    <path d="M12 14h16M12 20h16M12 26h10" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#667eea" />
+                            <stop offset="100%" stop-color="#764ba2" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Web to PDF</h1>
+            </div>
+            <p class="subtitle">Convert any web page to a professional PDF document</p>
+        </header>
+
+        <main class="main-content">
+            <div class="url-section">
+                <div class="section-header">
+                    <h2>Enter Website URL</h2>
+                    <div class="header-controls">
+                        <button id="clearBtn" class="btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path
+                                    d="M2 4h12M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M3 4h10v9a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"
+                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="url-input-wrapper">
+                    <svg class="url-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 6v4M10 14h.01" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" />
+                        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2" />
+                        <path d="M7 10h6M10 7v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <input type="url" id="urlInput" class="url-input" placeholder="https://example.com"
+                        spellcheck="false" />
+                </div>
+                <div class="quick-examples">
+                    <span class="examples-label">Quick examples:</span>
+                    <button class="example-btn" data-url="https://example.com">example.com</button>
+                    <button class="example-btn" data-url="https://github.com">github.com</button>
+                    <button class="example-btn" data-url="https://wikipedia.org">wikipedia.org</button>
+                </div>
+            </div>
+
+            <div class="options-section">
+                <h3>PDF Options</h3>
+                <div class="options-grid">
+                    <div class="option-item">
+                        <label for="pageSize">Page Size</label>
+                        <select id="pageSize" class="select-input">
+                            <option value="A4">A4</option>
+                            <option value="Letter">Letter</option>
+                            <option value="Legal">Legal</option>
+                            <option value="A3">A3</option>
+                            <option value="A5">A5</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label for="orientation">Orientation</label>
+                        <select id="orientation" class="select-input">
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <div class="option-item option-item-full">
+                        <label for="fileName">
+                            Save As (Filename)
+                            <span class="help-text">PDF will download to your browser's default download folder</span>
+                        </label>
+                        <input type="text" id="fileName" class="text-input" value="webpage"
+                            placeholder="e.g., my-document">
+                        <small class="input-note">Don't include .pdf extension - it will be added automatically</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <button id="convertBtn" class="btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 4v12m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                    Convert to PDF
+                    <div class="btn-shimmer"></div>
+                </button>
+            </div>
+
+            <div id="statusMessage" class="status-message"></div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by Pdfcrowd API • Made with ❤️</p>
+        </footer>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="loading-text">Converting web page to PDF...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
