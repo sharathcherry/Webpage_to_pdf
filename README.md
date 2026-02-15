@@ -1,69 +1,62 @@
 # Web to PDF Converter
 
-A beautiful web application that converts any web page to PDF using the Pdfcrowd API.
+A Streamlit web application that converts any web page to PDF using the iLovePDF API, with AI-powered filename generation via NVIDIA.
 
 ## Features
 
-- 🎨 Modern, premium dark theme UI with animations
+- 🎨 Modern, premium dark theme UI with gradient backgrounds
 - 🌐 Convert any web page URL to PDF
 - 📄 Multiple page sizes (A4, Letter, Legal, A3, A5)
 - 🔄 Portrait and Landscape orientation support
-- ⚡ Fast conversion with real-time feedback
-- 💾 Automatic download of generated PDFs
+- 🤖 AI-powered PDF title generation (NVIDIA Kimi K2.5)
+- 📦 Bulk URL conversion with progress tracking
+- 💾 Custom save directories and batch organization
 
 ## Installation
 
-1. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 
-1. **Start the server:**
-   ```bash
-   python server.py
-   ```
-
-2. **Open your browser:**
-   Navigate to `http://localhost:5000`
-
-3. **Convert a web page:**
-   - Enter a URL (e.g., `https://example.com`)
-   - Or click one of the quick example buttons
-   - Choose page size and orientation
-   - Click "Convert to PDF"
-   - Your PDF will download automatically!
-
-## API Credentials
-
-The app uses the Pdfcrowd API. The demo credentials are included, but you can replace them in `server.py`:
-
-```python
-API_USERNAME = 'your_username'
-API_KEY = 'your_api_key'
+### Streamlit App (Recommended)
+```bash
+streamlit run app.py
 ```
 
-## Tech Stack
+### CLI Tool
+```bash
+# Basic conversion
+python convert_url.py https://example.com
 
-- **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
-- **Backend:** Python Flask
-- **API:** Pdfcrowd
+# Custom output path and settings
+python convert_url.py https://example.com -o "C:/PDFs/example.pdf" -s Letter -r landscape
+
+# For full help
+python convert_url.py --help
+```
 
 ## Project Structure
 
 ```
-html_to_pdf/
-├── index.html          # Main HTML file
-├── style.css           # Styles and design system
-├── script.js           # Frontend JavaScript
-├── server.py           # Flask backend server
+Webpage_to_pdf/
+├── app.py              # Streamlit web app (main application)
+├── convert_url.py      # CLI conversion tool
 ├── requirements.txt    # Python dependencies
-└── README.md          # This file
+├── USAGE_GUIDE.md      # Detailed usage guide
+├── LICENSE             # MIT License
+└── README.md           # This file
 ```
 
-## Notes
+## API Credentials
 
-- The server runs on port 5000 by default
-- CORS is enabled for local development
-- Press Ctrl+C to stop the server
+The app uses two APIs:
+- **iLovePDF** — for HTML-to-PDF conversion (`ILOVEPDF_PUBLIC_KEY` / `ILOVEPDF_SECRET_KEY` in `app.py`)
+- **NVIDIA** — for AI-powered filename generation (`NVIDIA_API_KEY` in `app.py`)
+
+## Tech Stack
+
+- **Frontend:** Streamlit
+- **PDF Engine:** iLovePDF API (via `iloveapi` SDK)
+- **AI Titles:** NVIDIA Kimi K2.5

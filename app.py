@@ -1,5 +1,5 @@
 import streamlit as st
-import pdfcrowd
+from iloveapi.iloveapi import ILoveApi
 import requests
 import json
 import os
@@ -87,8 +87,10 @@ st.markdown("""
 # =========================================
 # API CREDENTIALS
 # =========================================
-PDFCROWD_USERNAME = 'sharathcherry'
-PDFCROWD_API_KEY = 'b6acc869f9cab87fab16928c9fda79a9'
+# NOTE: iLoveAPI requires both a Public Key and a Secret Key.
+# Please replace YOUR_PUBLIC_KEY with the one from https://www.iloveapi.com/user/projects
+ILOVEPDF_PUBLIC_KEY = 'project_public_3948d1848e5fee1dc431fd120ff53127_8ovxg5ae5984dfb60950e9b8655b37d482db2'
+ILOVEPDF_SECRET_KEY = 'secret_key_c4f16e818e2bb2019ad52a854c1ead37_uU-kR5484f1dd22334314d0052324fc5b127c'
 
 NVIDIA_API_KEY = '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'
 NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions'
@@ -187,14 +189,29 @@ def generate_filename(url, index=None, use_ai=True):
 # PDF CONVERSION
 # =========================================
 def convert_url_to_pdf(url, page_size='A4', orientation='portrait'):
-    """Convert a URL to PDF bytes."""
+    """Convert a URL to PDF bytes using iLovePDF."""
     try:
-        client = pdfcrowd.HtmlToPdfClient(PDFCROWD_USERNAME, PDFCROWD_API_KEY)
-        client.setPageSize(page_size)
-        client.setOrientation(orientation)
-        return client.convertUrl(url)
-    except pdfcrowd.Error as e:
-        raise Exception(f"Pdfcrowd Error: {e}")
+        api = ILoveApi(public_key=ILOVEPDF_PUBLIC_KEY, secret_key=ILOVEPDF_SECRET_KEY)
+        task = api.create_task('htmlpdf')
+        
+        # Upload the URL
+        task.add_file_by_url(url)
+        
+        # Process the conversion
+        task.process(
+            pagesize=page_size,
+            page_orientation=orientation,
+            page_margin=20,
+            single_page=False
+        )
+        
+        # Download resulting PDF
+        return task.download()
+    except Exception as e:
+        error_msg = str(e)
+        if hasattr(e, 'response') and hasattr(e.response, 'text'):
+            error_msg += f" (Details: {e.response.text})"
+        raise Exception(f"iLovePDF Error: {error_msg}")
 
 
 def save_pdf(pdf_bytes, save_directory, filename):
@@ -436,7 +453,7 @@ def main():
                 type="secondary",
             )
 
-    st.markdown('<div class="footer">Powered by Pdfcrowd API • AI by NVIDIA Kimi K2.5 • Made with ❤️ using Streamlit</div>', unsafe_allow_html=True)
+    st.markdown('<div class="footer">Powered by iLovePDF API • AI by NVIDIA Kimi K2.5 • Made with ❤️ using Streamlit</div>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
