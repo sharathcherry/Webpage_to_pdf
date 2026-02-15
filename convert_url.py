@@ -63,10 +63,11 @@ def convert_url_to_pdf(url, output_path=None, page_size='A4', orientation='portr
         
         # Process the conversion
         task.process(
-            pagesize=page_size,
+            page_size=page_size,
             page_orientation=orientation,
             page_margin=20,
-            single_page=False
+            single_page=False,
+            view_width=1024
         )
         
         # Download resulting PDF

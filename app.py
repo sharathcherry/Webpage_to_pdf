@@ -188,7 +188,7 @@ def generate_filename(url, index=None, use_ai=True):
 # =========================================
 # PDF CONVERSION
 # =========================================
-def convert_url_to_pdf(url, page_size='A4', orientation='portrait', max_retries=3):
+def convert_url_to_pdf(url, page_size='A4', orientation='portrait', view_width=1024, max_retries=3):
     """Convert a URL to PDF bytes using iLovePDF."""
     import httpx
     last_error = None
@@ -207,11 +207,15 @@ def convert_url_to_pdf(url, page_size='A4', orientation='portrait', max_retries=
             task.add_file_by_url(url)
             
             # Process the conversion
+            # view_width controls the virtual screen width used to render the page.
+            # Default API value is 1980px which makes content look tiny on A4.
+            # 1024px gives a much more natural, readable scale.
             task.process(
-                pagesize=page_size,
+                page_size=page_size,
                 page_orientation=orientation,
                 page_margin=20,
-                single_page=False
+                single_page=False,
+                view_width=view_width
             )
             
             # Download resulting PDF
@@ -260,6 +264,10 @@ def render_sidebar():
 
         page_size = st.selectbox("Page Size", ["A4", "Letter", "Legal", "A3", "A5"])
         orientation = st.selectbox("Orientation", ["portrait", "landscape"])
+        view_width = st.slider(
+            "Viewport Width (px)", min_value=600, max_value=2500, value=1024, step=50,
+            help="Width of the virtual screen used to render the page. Lower = larger text in PDF. Default: 1024px"
+        )
 
         st.markdown("---")
 
@@ -309,13 +317,13 @@ def render_sidebar():
         selected = st.selectbox("Load example", ["-- select --"] + list(examples.keys()))
         example_url = examples.get(selected, "")
 
-    return page_size, orientation, save_directory, example_url, use_ai
+    return page_size, orientation, view_width, save_directory, example_url, use_ai
 
 
 # =========================================
 # SINGLE URL
 # =========================================
-def process_single(url, page_size, orientation, save_directory, use_ai):
+def process_single(url, page_size, orientation, view_width, save_directory, use_ai):
     if not url:
         st.error("⚠️ Please enter a URL.")
         return
@@ -325,7 +333,7 @@ def process_single(url, page_size, orientation, save_directory, use_ai):
 
     with st.spinner(f"🔄 Converting **{url}** …"):
         try:
-            pdf_bytes = convert_url_to_pdf(url, page_size, orientation)
+            pdf_bytes = convert_url_to_pdf(url, page_size, orientation, view_width)
 
             with st.spinner("🤖 Generating smart filename …" if use_ai else ""):
                 filename, was_ai = generate_filename(url, use_ai=use_ai)
@@ -356,7 +364,7 @@ def process_single(url, page_size, orientation, save_directory, use_ai):
 # =========================================
 # BULK URLS
 # =========================================
-def process_bulk(urls_text, page_size, orientation, save_directory, use_ai):
+def process_bulk(urls_text, page_size, orientation, view_width, save_directory, use_ai):
     urls = [u.strip() for u in urls_text.strip().splitlines() if u.strip()]
 
     if not urls:
@@ -377,7 +385,7 @@ def process_bulk(urls_text, page_size, orientation, save_directory, use_ai):
             if not url.startswith(("http://", "https://")):
                 raise Exception("URL must start with http:// or https://")
 
-            pdf_bytes = convert_url_to_pdf(url, page_size, orientation)
+            pdf_bytes = convert_url_to_pdf(url, page_size, orientation, view_width)
             filename, was_ai = generate_filename(url, index=i, use_ai=use_ai)
             filenames.append((filename, was_ai, url))
 
@@ -431,7 +439,7 @@ def main():
         </div>
     """, unsafe_allow_html=True)
 
-    page_size, orientation, save_directory, example_url, use_ai = render_sidebar()
+    page_size, orientation, view_width, save_directory, example_url, use_ai = render_sidebar()
 
     _, center, _ = st.columns([1, 3, 1])
 
@@ -444,7 +452,7 @@ def main():
                 submitted = st.form_submit_button("🚀 Convert to PDF", use_container_width=True, type="primary")
 
             if submitted:
-                process_single(url, page_size, orientation, save_directory, use_ai)
+                process_single(url, page_size, orientation, view_width, save_directory, use_ai)
 
         with tab_bulk:
             with st.form("bulk_form"):
@@ -456,7 +464,7 @@ def main():
                 submitted_bulk = st.form_submit_button("🚀 Convert All to PDF", use_container_width=True, type="primary")
 
             if submitted_bulk:
-                process_bulk(bulk_text, page_size, orientation, save_directory, use_ai)
+                process_bulk(bulk_text, page_size, orientation, view_width, save_directory, use_ai)
 
         # Download button
         if getattr(st.session_state, 'conversion_ok', False):
