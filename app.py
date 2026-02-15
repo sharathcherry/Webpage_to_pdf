@@ -188,30 +188,46 @@ def generate_filename(url, index=None, use_ai=True):
 # =========================================
 # PDF CONVERSION
 # =========================================
-def convert_url_to_pdf(url, page_size='A4', orientation='portrait'):
+def convert_url_to_pdf(url, page_size='A4', orientation='portrait', max_retries=3):
     """Convert a URL to PDF bytes using iLovePDF."""
-    try:
-        api = ILoveApi(public_key=ILOVEPDF_PUBLIC_KEY, secret_key=ILOVEPDF_SECRET_KEY)
-        task = api.create_task('htmlpdf')
-        
-        # Upload the URL
-        task.add_file_by_url(url)
-        
-        # Process the conversion
-        task.process(
-            pagesize=page_size,
-            page_orientation=orientation,
-            page_margin=20,
-            single_page=False
-        )
-        
-        # Download resulting PDF
-        return task.download()
-    except Exception as e:
-        error_msg = str(e)
-        if hasattr(e, 'response') and hasattr(e.response, 'text'):
-            error_msg += f" (Details: {e.response.text})"
-        raise Exception(f"iLovePDF Error: {error_msg}")
+    import httpx
+    last_error = None
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Use a generous timeout (120s) to avoid timeouts on cloud deployments
+            api = ILoveApi(
+                public_key=ILOVEPDF_PUBLIC_KEY,
+                secret_key=ILOVEPDF_SECRET_KEY,
+                timeout=httpx.Timeout(120.0)
+            )
+            task = api.create_task('htmlpdf')
+            
+            # Upload the URL
+            task.add_file_by_url(url)
+            
+            # Process the conversion
+            task.process(
+                pagesize=page_size,
+                page_orientation=orientation,
+                page_margin=20,
+                single_page=False
+            )
+            
+            # Download resulting PDF
+            return task.download()
+        except Exception as e:
+            last_error = e
+            error_msg = str(e)
+            if 'timeout' in error_msg.lower() and attempt < max_retries:
+                import time
+                time.sleep(2 * attempt)  # Backoff: 2s, 4s
+                continue
+            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                error_msg += f" (Details: {e.response.text})"
+            raise Exception(f"iLovePDF Error: {error_msg}")
+    
+    raise Exception(f"iLovePDF Error: Failed after {max_retries} attempts — {last_error}")
 
 
 def save_pdf(pdf_bytes, save_directory, filename):
