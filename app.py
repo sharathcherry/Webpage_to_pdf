@@ -338,35 +338,21 @@ def process_single(url, page_size, orientation, view_width, save_directory, use_
             with st.spinner("🤖 Generating smart filename …" if use_ai else ""):
                 filename, was_ai = generate_filename(url, use_ai=use_ai)
 
-            st.session_state.pdf_bytes = pdf_bytes
-            st.session_state.pdf_filename = filename
-            st.session_state.conversion_ok = True
-
-            mb = len(pdf_bytes) / 1024 / 1024
-            st.success(f"✅ Done! ({mb:.2f} MB)")
-
-            # Show filename with AI badge
-            if was_ai:
-                st.markdown(f'📝 Filename: **{filename}** <span class="ai-badge">AI Generated</span>', unsafe_allow_html=True)
-            else:
-                st.markdown(f"📝 Filename: **{filename}**")
-
-            # Download button
-            st.download_button(
-                "📥 Download PDF",
-                data=pdf_bytes,
-                file_name=filename,
-                mime="application/pdf",
-                use_container_width=True,
-                type="primary",
-            )
+            # Store in session state so download button survives reruns
+            st.session_state.single_pdf = {
+                'bytes': pdf_bytes,
+                'filename': filename,
+                'was_ai': was_ai,
+                'size_mb': len(pdf_bytes) / 1024 / 1024,
+            }
 
             path = save_pdf(pdf_bytes, save_directory, filename)
             if path:
-                st.info(f"💾 Saved to:\n`{path}`")
-                st.metric("PDFs in folder", count_pdfs(save_directory))
+                st.session_state.single_pdf['saved_path'] = path
+                st.session_state.single_pdf['folder_count'] = count_pdfs(save_directory)
 
         except Exception as e:
+            st.session_state.pop('single_pdf', None)
             st.error(f"❌ {e}")
 
 
@@ -386,7 +372,7 @@ def process_bulk(urls_text, page_size, orientation, view_width, save_directory, 
 
     ok = 0
     fails = []
-    filenames = []
+    results = []
 
     for i, url in enumerate(urls):
         status.text(f"Converting {i+1}/{len(urls)}: {url}")
@@ -396,7 +382,7 @@ def process_bulk(urls_text, page_size, orientation, view_width, save_directory, 
 
             pdf_bytes = convert_url_to_pdf(url, page_size, orientation, view_width)
             filename, was_ai = generate_filename(url, index=i, use_ai=use_ai)
-            filenames.append((filename, was_ai, url, pdf_bytes))
+            results.append({'filename': filename, 'was_ai': was_ai, 'url': url, 'bytes': pdf_bytes})
 
             if save_directory:
                 save_pdf(pdf_bytes, save_directory, filename)
@@ -409,38 +395,14 @@ def process_bulk(urls_text, page_size, orientation, view_width, save_directory, 
     status.empty()
     progress.empty()
 
-    # Summary
-    st.markdown("---")
-    st.success("✅ **Conversion Complete!**")
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total", len(urls))
-    c2.metric("Success", ok)
-    c3.metric("Failed", len(fails))
-
-    if save_directory:
-        n = count_pdfs(save_directory)
-        st.info(f"📂 Saved to: `{save_directory}`\n\n📊 Total PDFs: **{n}**")
-
-    # Show generated filenames with download buttons
-    if filenames:
-        with st.expander(f"� Download {len(filenames)} PDFs", expanded=True):
-            for idx, (fname, was_ai, url, pdf_data) in enumerate(filenames):
-                badge = ' <span class="ai-badge">AI</span>' if was_ai else ""
-                st.markdown(f"• **{fname}**{badge}<br><small style='color:gray'>{url}</small>", unsafe_allow_html=True)
-                st.download_button(
-                    f"📥 Download",
-                    data=pdf_data,
-                    file_name=fname,
-                    mime="application/pdf",
-                    key=f"bulk_dl_{idx}",
-                    use_container_width=True,
-                )
-
-    if fails:
-        with st.expander(f"⚠️ {len(fails)} Failed"):
-            for url, err in fails:
-                st.error(f"**{url}**\n{err}")
+    # Store in session state so download buttons survive reruns
+    st.session_state.bulk_results = {
+        'pdfs': results,
+        'fails': fails,
+        'total': len(urls),
+        'ok': ok,
+        'save_directory': save_directory,
+    }
 
 
 # =========================================
@@ -469,6 +431,27 @@ def main():
             if submitted:
                 process_single(url, page_size, orientation, view_width, save_directory, use_ai)
 
+            # Render single PDF result from session state (survives reruns)
+            if 'single_pdf' in st.session_state:
+                result = st.session_state.single_pdf
+                st.success(f"✅ Done! ({result['size_mb']:.2f} MB)")
+                if result['was_ai']:
+                    st.markdown(f'📝 Filename: **{result["filename"]}** <span class="ai-badge">AI Generated</span>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f"📝 Filename: **{result['filename']}**")
+                st.download_button(
+                    "📥 Download PDF",
+                    data=result['bytes'],
+                    file_name=result['filename'],
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary",
+                    key="single_dl",
+                )
+                if 'saved_path' in result:
+                    st.info(f"💾 Saved to:\n`{result['saved_path']}`")
+                    st.metric("PDFs in folder", result['folder_count'])
+
         with tab_bulk:
             with st.form("bulk_form"):
                 st.caption("Enter one URL per line.")
@@ -481,6 +464,39 @@ def main():
             if submitted_bulk:
                 process_bulk(bulk_text, page_size, orientation, view_width, save_directory, use_ai)
 
+            # Render bulk results from session state (survives reruns)
+            if 'bulk_results' in st.session_state:
+                br = st.session_state.bulk_results
+                st.markdown("---")
+                st.success("✅ **Conversion Complete!**")
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Total", br['total'])
+                c2.metric("Success", br['ok'])
+                c3.metric("Failed", len(br['fails']))
+
+                if br['save_directory']:
+                    n = count_pdfs(br['save_directory'])
+                    st.info(f"📂 Saved to: `{br['save_directory']}`\n\n📊 Total PDFs: **{n}**")
+
+                if br['pdfs']:
+                    with st.expander(f"📥 Download {len(br['pdfs'])} PDFs", expanded=True):
+                        for idx, pdf_info in enumerate(br['pdfs']):
+                            badge = ' <span class="ai-badge">AI</span>' if pdf_info['was_ai'] else ""
+                            st.markdown(f"• **{pdf_info['filename']}**{badge}<br><small style='color:gray'>{pdf_info['url']}</small>", unsafe_allow_html=True)
+                            st.download_button(
+                                f"📥 Download",
+                                data=pdf_info['bytes'],
+                                file_name=pdf_info['filename'],
+                                mime="application/pdf",
+                                key=f"bulk_dl_{idx}",
+                                use_container_width=True,
+                            )
+
+                if br['fails']:
+                    with st.expander(f"⚠️ {len(br['fails'])} Failed"):
+                        for url, err in br['fails']:
+                            st.error(f"**{url}**\n{err}")
 
 
     st.markdown('<div class="footer">Powered by iLovePDF API • AI by NVIDIA Kimi K2.5 • Made with ❤️ using Streamlit</div>', unsafe_allow_html=True)
